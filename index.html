@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Vendas</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <body>
+        <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+            <div class="container mx-auto px-4 py-8">
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+                    <div>
+                        <h1 class="text-3xl font-bold text-indigo-800">Dashboard de Vendas</h1>
+                        <p class="text-gray-600">Acompanhe o desempenho de vendas em tempo real</p>
+                    </div>
+                    
+                    <!-- Filtros -->
+                    <div class="mt-4 md:mt-0 bg-white p-4 rounded-lg shadow-md w-full md:w-auto">
+                        <div class="flex flex-col md:flex-row gap-3 items-end">
+                            <div>
+                                <label for="year" class="block text-sm font-medium text-gray-700 mb-1">Ano</label>
+                                <select id="year" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 pr-8">
+                                    <option value="2023">2023</option>
+                                    <option value="2022">2022</option>
+                                    <option value="2021">2021</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="month" class="block text-sm font-medium text-gray-700 mb-1">Mês</label>
+                                <select id="month" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 pr-8">
+                                    <option value="todos">Todos</option>
+                                    <option value="1">Janeiro</option>
+                                    <option value="2">Fevereiro</option>
+                                    <option value="3">Março</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Maio</option>
+                                    <option value="6">Junho</option>
+                                    <option value="7">Julho</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Setembro</option>
+                                    <option value="10">Outubro</option>
+                                    <option value="11">Novembro</option>
+                                    <option value="12">Dezembro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="day" class="block text-sm font-medium text-gray-700 mb-1">Dia</label>
+                                <select id="day" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 pr-8"><option value="todos">Todos</option></select>
+                            </div>
+                            <button id="filter-btn" class="px-4 py-2 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Total de Vendas -->
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-8 dashboard-card border-l-4 border-green-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-700">Total de Vendas</h2>
+                            <p class="text-gray-500 text-sm" id="period-label">Ano: 2023</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-4xl font-bold text-green-600" id="total-sales">R$&nbsp;4.353.831,00</p>
+                            <p class="text-sm text-gray-500" id="comparison">+12% em relação ao período anterior</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cards de Ranking -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Ranking de Vendedores -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 dashboard-card">
+                        <h2 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            Ranking de Vendedores
+                        </h2>
+                        <div class="chart-container">
+                            <canvas id="sellers-chart" width="352" height="250" style="display: block; box-sizing: border-box; height: 250px; width: 352px;"></canvas>
+                        </div>
+                        <div class="mt-8">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Vendedor</th>
+                                        <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Vendas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sellers-table" class="divide-y divide-gray-200"><tr><td class="py-2 text-sm text-gray-900">Ana Silva</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;930.167,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Carlos Oliveira</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;921.191,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Juliana Lima</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;869.930,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Pedro Costa</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;836.481,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Mariana Santos</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;796.062,00</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Ranking de Produtos -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 dashboard-card">
+                        <h2 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                            </svg>
+                            Ranking de Produtos
+                        </h2>
+                        <div class="chart-container">
+                            <canvas id="products-chart" width="352" height="250" style="display: block; box-sizing: border-box; height: 250px; width: 352px;"></canvas>
+                        </div>
+                        <div class="mt-8">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Produto</th>
+                                        <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Vendas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="products-table" class="divide-y divide-gray-200"><tr><td class="py-2 text-sm text-gray-900">Smartphone X</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;882.374,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Notebook Pro</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;880.053,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Tablet Ultra</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;874.332,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Smart TV 4K</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;863.441,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Fone Bluetooth</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;853.631,00</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Ranking de Bairros -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 dashboard-card">
+                        <h2 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Ranking de Bairros
+                        </h2>
+                        <div class="chart-container">
+                            <canvas id="neighborhoods-chart" width="352" height="250" style="display: block; box-sizing: border-box; height: 250px; width: 352px;"></canvas>
+                        </div>
+                        <div class="mt-8">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Bairro</th>
+                                        <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Vendas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="neighborhoods-table" class="divide-y divide-gray-200"><tr><td class="py-2 text-sm text-gray-900">Centro</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;877.653,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Vila Nova</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;873.688,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Jardim América</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;872.672,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Santa Mônica</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;870.922,00</td></tr><tr><td class="py-2 text-sm text-gray-900">Bela Vista</td><td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;858.896,00</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Gráfico de tendência de vendas -->
+                <div class="bg-white rounded-lg shadow-lg p-6 dashboard-card mb-8">
+                    <h2 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                        Tendência de Vendas
+                    </h2>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="trend-chart" width="1200" height="300" style="display: block; box-sizing: border-box; height: 300px; width: 1200px;"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Gráfico de distribuição por categoria -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow-lg p-6 dashboard-card">
+                        <h2 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                            </svg>
+                            Distribuição por Categoria
+                        </h2>
+                        <div class="chart-container">
+                            <canvas id="category-chart" width="564" height="250" style="display: block; box-sizing: border-box; height: 250px; width: 564px;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-lg p-6 dashboard-card">
+                        <h2 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            Comparativo de Desempenho
+                        </h2>
+                        <div class="chart-container">
+                            <canvas id="performance-chart" width="564" height="250" style="display: block; box-sizing: border-box; height: 250px; width: 564px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Variáveis para armazenar as instâncias dos gráficos
+            let sellersChart, productsChart, neighborhoodsChart, trendChart, categoryChart, performanceChart;
+            
+            // Dados de exemplo
+            const salesData = {
+                2021: generateYearData(2021),
+                2022: generateYearData(2022),
+                2023: generateYearData(2023)
+            };
+
+            // Função para gerar dados aleatórios para um ano
+            function generateYearData(year) {
+                const months = {};
+                for (let month = 1; month <= 12; month++) {
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    const days = {};
+                    
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        days[day] = generateDayData();
+                    }
+                    
+                    months[month] = {
+                        days: days,
+                        summary: aggregateMonthData(days)
+                    };
+                }
+                
+                return {
+                    months: months,
+                    summary: aggregateYearData(months)
+                };
+            }
+
+            // Gerar dados para um dia
+            function generateDayData() {
+                const sellers = ['Ana Silva', 'Carlos Oliveira', 'Mariana Santos', 'Pedro Costa', 'Juliana Lima'];
+                const products = ['Smartphone X', 'Notebook Pro', 'Smart TV 4K', 'Fone Bluetooth', 'Tablet Ultra'];
+                const neighborhoods = ['Centro', 'Jardim América', 'Vila Nova', 'Bela Vista', 'Santa Mônica'];
+                const categories = ['Eletrônicos', 'Informática', 'Áudio e Vídeo', 'Acessórios', 'Móveis'];
+                
+                const data = {
+                    sellers: {},
+                    products: {},
+                    neighborhoods: {},
+                    categories: {},
+                    total: 0
+                };
+                
+                // Gerar entre 10 e 30 vendas para o dia
+                const salesCount = Math.floor(Math.random() * 20) + 10;
+                
+                for (let i = 0; i < salesCount; i++) {
+                    const seller = sellers[Math.floor(Math.random() * sellers.length)];
+                    const product = products[Math.floor(Math.random() * products.length)];
+                    const neighborhood = neighborhoods[Math.floor(Math.random() * neighborhoods.length)];
+                    const category = categories[Math.floor(Math.random() * categories.length)];
+                    const value = Math.floor(Math.random() * 1000) + 100; // Valor entre 100 e 1100
+                    
+                    data.sellers[seller] = (data.sellers[seller] || 0) + value;
+                    data.products[product] = (data.products[product] || 0) + value;
+                    data.neighborhoods[neighborhood] = (data.neighborhoods[neighborhood] || 0) + value;
+                    data.categories[category] = (data.categories[category] || 0) + value;
+                    data.total += value;
+                }
+                
+                return data;
+            }
+
+            // Agregar dados do mês
+            function aggregateMonthData(days) {
+                const result = {
+                    sellers: {},
+                    products: {},
+                    neighborhoods: {},
+                    categories: {},
+                    total: 0
+                };
+                
+                for (const day in days) {
+                    const dayData = days[day];
+                    
+                    // Agregar vendedores
+                    for (const seller in dayData.sellers) {
+                        result.sellers[seller] = (result.sellers[seller] || 0) + dayData.sellers[seller];
+                    }
+                    
+                    // Agregar produtos
+                    for (const product in dayData.products) {
+                        result.products[product] = (result.products[product] || 0) + dayData.products[product];
+                    }
+                    
+                    // Agregar bairros
+                    for (const neighborhood in dayData.neighborhoods) {
+                        result.neighborhoods[neighborhood] = (result.neighborhoods[neighborhood] || 0) + dayData.neighborhoods[neighborhood];
+                    }
+                    
+                    // Agregar categorias
+                    for (const category in dayData.categories) {
+                        result.categories[category] = (result.categories[category] || 0) + dayData.categories[category];
+                    }
+                    
+                    result.total += dayData.total;
+                }
+                
+                return result;
+            }
+
+            // Agregar dados do ano
+            function aggregateYearData(months) {
+                const result = {
+                    sellers: {},
+                    products: {},
+                    neighborhoods: {},
+                    categories: {},
+                    total: 0,
+                    monthlyTotals: {}
+                };
+                
+                for (const month in months) {
+                    const monthData = months[month].summary;
+                    
+                    // Agregar vendedores
+                    for (const seller in monthData.sellers) {
+                        result.sellers[seller] = (result.sellers[seller] || 0) + monthData.sellers[seller];
+                    }
+                    
+                    // Agregar produtos
+                    for (const product in monthData.products) {
+                        result.products[product] = (result.products[product] || 0) + monthData.products[product];
+                    }
+                    
+                    // Agregar bairros
+                    for (const neighborhood in monthData.neighborhoods) {
+                        result.neighborhoods[neighborhood] = (result.neighborhoods[neighborhood] || 0) + monthData.neighborhoods[neighborhood];
+                    }
+                    
+                    // Agregar categorias
+                    for (const category in monthData.categories) {
+                        result.categories[category] = (result.categories[category] || 0) + monthData.categories[category];
+                    }
+                    
+                    result.total += monthData.total;
+                    result.monthlyTotals[month] = monthData.total;
+                }
+                
+                return result;
+            }
+
+            // Função para formatar valores monetários
+            function formatCurrency(value) {
+                return new Intl.NumberFormat('pt-BR', { 
+                    style: 'currency', 
+                    currency: 'BRL' 
+                }).format(value);
+            }
+
+            // Função para ordenar objetos por valor
+            function sortObjectByValue(obj) {
+                return Object.entries(obj)
+                    .sort((a, b) => b[1] - a[1])
+                    .reduce((acc, [key, value]) => {
+                        acc[key] = value;
+                        return acc;
+                    }, {});
+            }
+
+            // Função para pegar os top N itens de um objeto
+            function getTopItems(obj, n = 5) {
+                return Object.entries(sortObjectByValue(obj))
+                    .slice(0, n)
+                    .reduce((acc, [key, value]) => {
+                        acc[key] = value;
+                        return acc;
+                    }, {});
+            }
+
+            // Função para renderizar tabela
+            function renderTable(tableId, data) {
+                const table = document.getElementById(tableId);
+                table.innerHTML = '';
+                
+                Object.entries(data).forEach(([key, value]) => {
+                    const row = document.createElement('tr');
+                    
+                    const nameCell = document.createElement('td');
+                    nameCell.className = 'py-2 text-sm text-gray-900';
+                    nameCell.textContent = key;
+                    
+                    const valueCell = document.createElement('td');
+                    valueCell.className = 'py-2 text-sm text-gray-900 text-right font-medium';
+                    valueCell.textContent = formatCurrency(value);
+                    
+                    row.appendChild(nameCell);
+                    row.appendChild(valueCell);
+                    table.appendChild(row);
+                });
+            }
+
+            // Função para criar ou atualizar gráfico de barras
+            function updateBarChart(chartId, chartInstance, data, label) {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                const labels = Object.keys(data);
+                const values = Object.values(data);
+                
+                const chartData = {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: values,
+                        backgroundColor: [
+                            'rgba(99, 102, 241, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(79, 70, 229, 0.7)',
+                            'rgba(67, 56, 202, 0.7)',
+                            'rgba(55, 48, 163, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(99, 102, 241, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(79, 70, 229, 1)',
+                            'rgba(67, 56, 202, 1)',
+                            'rgba(55, 48, 163, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+                
+                const options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value).replace('R$', '');
+                                }
+                            }
+                        }
+                    }
+                };
+                
+                if (chartInstance) {
+                    chartInstance.data = chartData;
+                    chartInstance.options = options;
+                    chartInstance.update();
+                    return chartInstance;
+                } else {
+                    return new Chart(ctx, {
+                        type: 'bar',
+                        data: chartData,
+                        options: options
+                    });
+                }
+            }
+
+            // Função para criar ou atualizar gráfico de pizza
+            function updatePieChart(chartId, chartInstance, data, label) {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                const labels = Object.keys(data);
+                const values = Object.values(data);
+                
+                const chartData = {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: values,
+                        backgroundColor: [
+                            'rgba(99, 102, 241, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(79, 70, 229, 0.7)',
+                            'rgba(67, 56, 202, 0.7)',
+                            'rgba(55, 48, 163, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(99, 102, 241, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(79, 70, 229, 1)',
+                            'rgba(67, 56, 202, 1)',
+                            'rgba(55, 48, 163, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+                
+                const options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = formatCurrency(context.raw);
+                                    return `${label}: ${value}`;
+                                }
+                            }
+                        }
+                    }
+                };
+                
+                if (chartInstance) {
+                    chartInstance.data = chartData;
+                    chartInstance.options = options;
+                    chartInstance.update();
+                    return chartInstance;
+                } else {
+                    return new Chart(ctx, {
+                        type: 'pie',
+                        data: chartData,
+                        options: options
+                    });
+                }
+            }
+
+            // Função para criar ou atualizar gráfico de linha
+            function updateLineChart(chartId, chartInstance, data, label) {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                const labels = Object.keys(data).map(month => {
+                    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                    return monthNames[parseInt(month) - 1];
+                });
+                const values = Object.values(data);
+                
+                const chartData = {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: values,
+                        fill: false,
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        tension: 0.1,
+                        pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+                    }]
+                };
+                
+                const options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value).replace('R$', '');
+                                }
+                            }
+                        }
+                    }
+                };
+                
+                if (chartInstance) {
+                    chartInstance.data = chartData;
+                    chartInstance.options = options;
+                    chartInstance.update();
+                    return chartInstance;
+                } else {
+                    return new Chart(ctx, {
+                        type: 'line',
+                        data: chartData,
+                        options: options
+                    });
+                }
+            }
+
+            // Função para criar ou atualizar gráfico de barras horizontais
+            function updateHorizontalBarChart(chartId, chartInstance, data, label) {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                const labels = Object.keys(data);
+                const values = Object.values(data);
+                
+                const chartData = {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: values,
+                        backgroundColor: [
+                            'rgba(99, 102, 241, 0.7)',
+                            'rgba(139, 92, 246, 0.7)',
+                            'rgba(79, 70, 229, 0.7)',
+                            'rgba(67, 56, 202, 0.7)',
+                            'rgba(55, 48, 163, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(99, 102, 241, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(79, 70, 229, 1)',
+                            'rgba(67, 56, 202, 1)',
+                            'rgba(55, 48, 163, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+                
+                const options = {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value).replace('R$', '');
+                                }
+                            }
+                        }
+                    }
+                };
+                
+                if (chartInstance) {
+                    chartInstance.data = chartData;
+                    chartInstance.options = options;
+                    chartInstance.update();
+                    return chartInstance;
+                } else {
+                    return new Chart(ctx, {
+                        type: 'bar',
+                        data: chartData,
+                        options: options
+                    });
+                }
+            }
+
+            // Função para atualizar o dashboard com base nos filtros
+            function updateDashboard() {
+                const year = document.getElementById('year').value;
+                const month = document.getElementById('month').value;
+                const day = document.getElementById('day').value;
+                
+                let data;
+                let periodLabel;
+                
+                if (month === 'todos') {
+                    // Dados do ano inteiro
+                    data = salesData[year].summary;
+                    periodLabel = `Ano: ${year}`;
+                } else if (day === 'todos') {
+                    // Dados do mês
+                    data = salesData[year].months[month].summary;
+                    const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long' });
+                    periodLabel = `${monthName} de ${year}`;
+                } else {
+                    // Dados do dia
+                    data = salesData[year].months[month].days[day];
+                    const date = new Date(year, month - 1, day);
+                    periodLabel = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+                }
+                
+                // Atualizar total de vendas
+                document.getElementById('total-sales').textContent = formatCurrency(data.total);
+                document.getElementById('period-label').textContent = periodLabel;
+                
+                // Pegar os top 5 de cada categoria
+                const topSellers = getTopItems(data.sellers);
+                const topProducts = getTopItems(data.products);
+                const topNeighborhoods = getTopItems(data.neighborhoods);
+                
+                // Renderizar tabelas
+                renderTable('sellers-table', topSellers);
+                renderTable('products-table', topProducts);
+                renderTable('neighborhoods-table', topNeighborhoods);
+                
+                // Atualizar gráficos
+                sellersChart = updateBarChart('sellers-chart', sellersChart, topSellers, 'Vendas por Vendedor');
+                productsChart = updateBarChart('products-chart', productsChart, topProducts, 'Vendas por Produto');
+                neighborhoodsChart = updateBarChart('neighborhoods-chart', neighborhoodsChart, topNeighborhoods, 'Vendas por Bairro');
+                
+                // Atualizar gráfico de tendência
+                if (month === 'todos') {
+                    trendChart = updateLineChart('trend-chart', trendChart, data.monthlyTotals, 'Tendência de Vendas por Mês');
+                }
+                
+                // Atualizar gráfico de categorias
+                categoryChart = updatePieChart('category-chart', categoryChart, data.categories, 'Vendas por Categoria');
+                
+                // Atualizar gráfico de desempenho
+                // Comparar com o ano anterior se disponível
+                if (parseInt(year) > 2021) {
+                    const previousYear = parseInt(year) - 1;
+                    const currentYearData = salesData[year].summary.monthlyTotals;
+                    const previousYearData = salesData[previousYear].summary.monthlyTotals;
+                    
+                    const performanceData = {
+                        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                        datasets: [
+                            {
+                                label: `${year}`,
+                                data: Object.values(currentYearData),
+                                backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                                borderColor: 'rgba(99, 102, 241, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: `${previousYear}`,
+                                data: Object.values(previousYearData),
+                                backgroundColor: 'rgba(139, 92, 246, 0.5)',
+                                borderColor: 'rgba(139, 92, 246, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    };
+                    
+                    const ctx = document.getElementById('performance-chart').getContext('2d');
+                    
+                    if (performanceChart) {
+                        performanceChart.data = performanceData;
+                        performanceChart.update();
+                    } else {
+                        performanceChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: performanceData,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            callback: function(value) {
+                                                return formatCurrency(value).replace('R$', '');
+                                            }
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Função para popular o select de dias com base no mês e ano selecionados
+            function populateDays() {
+                const year = document.getElementById('year').value;
+                const month = document.getElementById('month').value;
+                const daySelect = document.getElementById('day');
+                
+                // Limpar opções atuais
+                daySelect.innerHTML = '<option value="todos">Todos</option>';
+                
+                if (month !== 'todos') {
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    
+                    for (let i = 1; i <= daysInMonth; i++) {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = i;
+                        daySelect.appendChild(option);
+                    }
+                }
+            }
+
+            // Event listeners
+            document.getElementById('year').addEventListener('change', function() {
+                populateDays();
+            });
+            
+            document.getElementById('month').addEventListener('change', function() {
+                populateDays();
+            });
+            
+            document.getElementById('filter-btn').addEventListener('click', function() {
+                updateDashboard();
+            });
+
+            // Função para redimensionar gráficos quando a janela for redimensionada
+            window.addEventListener('resize', function() {
+                if (sellersChart) sellersChart.resize();
+                if (productsChart) productsChart.resize();
+                if (neighborhoodsChart) neighborhoodsChart.resize();
+                if (trendChart) trendChart.resize();
+                if (categoryChart) categoryChart.resize();
+                if (performanceChart) performanceChart.resize();
+            });
+
+            // Inicializar dashboard
+            populateDays();
+            updateDashboard();
+        </script>
+        <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'949706f2868d6491',t:'MTc0ODg2ODEwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;"></iframe>
+    </body>
+</html>
