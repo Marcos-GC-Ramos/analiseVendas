@@ -86,12 +86,17 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(csv => {
             const linhas = csv.split('\n').filter(l => l.trim() !== '');
             const headers = linhas[0].split(',');
-            todasAsLinhas = linhas.slice(1); // guarda para futuros filtros
+            todasAsLinhas = linhas.slice(1);
 
             const dataIndex = headers.findIndex(h => h.trim().toUpperCase() === 'DATA DA VENDA');
 
             preencherAnosMesesDias(todasAsLinhas, dataIndex);
-            filtrarPorDataAtual(headers, todasAsLinhas, dataIndex); // mostra o dia atual
+
+            // Define os filtros como "todos" e mostra toda a base
+            document.getElementById('year').value = 'todos';
+            document.getElementById('month').value = 'todos';
+            document.getElementById('day').value = 'todos';
+            filtrarTabela();
         });
 
     document.getElementById('year').addEventListener('change', () => {
@@ -247,69 +252,76 @@ function filtrarTabela() {
 
     document.getElementById('period-label').textContent = label.charAt(0).toUpperCase() + label.slice(1);
 
-    function gerarRankings(filtradas) {
-        const vendedores = {};
+    function gerarRanking(filtradas, colunaIndex, tabelaId, chartId, chartVar, label) {
+        const ranking = {};
 
         filtradas.forEach(linha => {
             const colunas = linha.split(',');
             const valorStr = colunas[3]?.replace('R$', '').replace(',', '.').trim();
             const valor = parseFloat(valorStr);
-            const vendedor = colunas[4]?.trim();
+            const chave = colunas[colunaIndex]?.trim();
 
-            if (!isNaN(valor)) {
-                vendedores[vendedor] = (vendedores[vendedor] || 0) + valor;
+            if (!isNaN(valor) && chave) {
+                if (!ranking[chave]) {
+                    ranking[chave] = { total: 0, quantidade: 0 };
+                }
+                ranking[chave].total += valor;
+                ranking[chave].quantidade += 1;
             }
         });
 
-        function renderTabela(dados, elementoId) {
-            const tbody = document.getElementById(elementoId);
-            tbody.innerHTML = ''; // Limpa antes de adicionar
-            Object.entries(dados)
-                .sort((a, b) => b[1] - a[1]) // Ordena do maior para o menor
-                .slice(0, 5) // Top 5
-                .forEach(([chave, valor]) => {
-                    const row = `
+        // Renderiza a tabela
+        const tbody = document.getElementById(tabelaId);
+        tbody.innerHTML = '';
+        Object.entries(ranking)
+            .sort((a, b) => b[1].total - a[1].total)
+            .slice(0, 5)
+            .forEach(([nome, { total, quantidade }]) => {
+                const row = `
                     <tr>
-                        <td class="py-2 text-sm text-gray-900">${chave}</td>
-                        <td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        <td class="py-2 text-sm text-gray-900">${nome}</td>
+                        <td class="py-2 text-sm text-gray-900 text-center">${quantidade}</td>
+                        <td class="py-2 text-sm text-gray-900 text-right font-medium">R$&nbsp;${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     </tr>
-                    `;
-                    tbody.insertAdjacentHTML('beforeend', row);
-                });
-        }
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
 
-        renderTabela(vendedores, 'sellers-table');
+        // Dados para gráfico
+        const top5 = Object.entries(ranking)
+            .sort((a, b) => b[1].total - a[1].total)
+            .slice(0, 5)
+            .reduce((acc, [key, val]) => {
+                acc[key] = val.total;
+                return acc;
+            }, {});
 
-        const top5 = Object.entries(vendedores)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .reduce((acc, [key, val]) => {
-            acc[key] = val;
-            return acc;
-        }, {});
-
-        sellersChart = updateBarChart('sellers-chart', sellersChart, top5, 'Vendas por Vendedor');
+        window[chartVar] = updateBarChart(chartId, window[chartVar], top5, label);
     }
 
     renderizarTabela(headers, filtradas);
-    gerarRankings(filtradas);
+    gerarRanking(filtradas, 4, 'sellers-table', 'sellers-chart', 'sellersChart', 'Vendas por Vendedor');
+    gerarRanking(filtradas, 2, 'products-table', 'products-chart', 'productsChart', 'Vendas por Produto');
+    gerarRanking(filtradas, 1, 'bairros-table', 'bairros-chart', 'neighborhoodsChart', 'Vendas por Bairro');
+
 }
 
-function filtrarPorDataAtual(headers, linhas, dataIndex) {
-    const hoje = new Date();
-    const dia = String(hoje.getDate()).padStart(2, '0');
-    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-    const ano = String(hoje.getFullYear());
+// para futuras modificacoes
+// function filtrarPorDataAtual(headers, linhas, dataIndex) {
+//     const hoje = new Date();
+//     const dia = String(hoje.getDate()).padStart(2, '0');
+//     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+//     const ano = String(hoje.getFullYear());
 
-    const filtradas = linhas.filter(linha => {
-        const colunas = linha.split(',');
-        const data = colunas[dataIndex]?.trim();
-        const [d, m, a] = data.split('/');
-        return d === dia && m === mes && a === ano;
-    });
+//     const filtradas = linhas.filter(linha => {
+//         const colunas = linha.split(',');
+//         const data = colunas[dataIndex]?.trim();
+//         const [d, m, a] = data.split('/');
+//         return d === dia && m === mes && a === ano;
+//     });
 
-    renderizarTabela(headers, filtradas);
-}
+//     renderizarTabela(headers, filtradas);
+// }
 
 function renderizarTabela(headers, linhas) {
     const cabecalho = document.getElementById('cabecalho');
