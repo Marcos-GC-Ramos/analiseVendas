@@ -1,86 +1,15 @@
+import { updateBarChart, updateLineChart  } from './charts.js';
+
 const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTGL4I9qCp-lZM4XyLrt6NjOtWRye4j_bAORb_pod4Kyy-EC4yOdyKqinhzLzscSoLYnzAh4Uo-SQYD/pub?gid=946356819&single=true&output=csv';
 
 let todasAsLinhas = [];
 let sellersChart, productsChart, neighborhoodsChart, trendChart, categoryChart, performanceChart;
 
-// Função para criar ou atualizar gráfico de barras
-function updateBarChart(chartId, chartInstance, data, label) {
-    const ctx = document.getElementById(chartId).getContext('2d');
-    const labels = Object.keys(data);
-    const values = Object.values(data);
-
-    const chartData = {
-        labels: labels,
-        datasets: [{
-            label: label,
-            data: values,
-            backgroundColor: [
-                'rgba(99, 102, 241, 0.7)',
-                'rgba(139, 92, 246, 0.7)',
-                'rgba(79, 70, 229, 0.7)',
-                'rgba(67, 56, 202, 0.7)',
-                'rgba(55, 48, 163, 0.7)'
-            ],
-            borderColor: [
-                'rgba(99, 102, 241, 1)',
-                'rgba(139, 92, 246, 1)',
-                'rgba(79, 70, 229, 1)',
-                'rgba(67, 56, 202, 1)',
-                'rgba(55, 48, 163, 1)'
-            ],
-            borderWidth: 1
-        }]
-    };
-
-    const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            },
-            tooltip: {
-                callbacks: {
-                    label: function (context) {
-                        return formatCurrency(context.raw);
-                    }
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function (value) {
-                        return formatCurrency(value).replace('R$', '');
-                    }
-                }
-            }
-        }
-    };
-
-    if (chartInstance) {
-        chartInstance.data = chartData;
-        chartInstance.options = options;
-        chartInstance.update();
-        return chartInstance;
-    } else {
-        return new Chart(ctx, {
-            type: 'bar',
-            data: chartData,
-            options: options
-        });
-    }
-}
-
-function formatCurrency(value) {
-    return value.toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    });
-}
-
+// utilizando os dados que vem da url e povando o sistema
 document.addEventListener('DOMContentLoaded', () => {
+    const divCarregando = document.getElementById('div-carregando');
+    divCarregando.classList.remove('hidden');
+
     fetch(url)
         .then(res => res.text())
         .then(csv => {
@@ -97,6 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('month').value = 'todos';
             document.getElementById('day').value = 'todos';
             filtrarTabela();
+        })
+        .finally(() => {
+           divCarregando.classList.add('hidden');
         });
 
     document.getElementById('year').addEventListener('change', () => {
@@ -227,13 +159,13 @@ function filtrarTabela() {
     const total = filtradas.reduce((acc, linha) => {
         const colunas = linha.split(',');
         const valorStr = colunas[3]?.replace('R$', '').replace(',', '.').trim();
-        const valor = parseFloat(valorStr);
+        const valor = parseFloat(valorStr) * 0.3;
         return acc + (isNaN(valor) ? 0 : valor);
     }, 0);
 
     document.getElementById('total-sales').textContent = `R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
-    // 🗓️ Descrição do período
+    // Descrição do período
     let label = '';
     if (ano !== 'todos') {
         const mInt = parseInt(mes);
@@ -258,7 +190,7 @@ function filtrarTabela() {
         filtradas.forEach(linha => {
             const colunas = linha.split(',');
             const valorStr = colunas[3]?.replace('R$', '').replace(',', '.').trim();
-            const valor = parseFloat(valorStr);
+            const valor = parseFloat(valorStr) * 0.3;
             const chave = colunas[colunaIndex]?.trim();
 
             if (!isNaN(valor) && chave) {
@@ -299,29 +231,70 @@ function filtrarTabela() {
         window[chartVar] = updateBarChart(chartId, window[chartVar], top5, label);
     }
 
+    function atualizarGraficoDeTendencia(filtradas, ano, mes, dia) {
+        if (ano !== 'todos' && mes !== 'todos' && dia !== 'todos') {
+            // Oculta o gráfico
+            document.getElementById('div-grafico-linha').style.display = 'none';
+            document.getElementById('trend-chart').parentElement.style.display = 'none';
+            return;
+        }
+
+        document.getElementById('trend-chart').parentElement.style.display = 'block';
+        document.getElementById('div-grafico-linha').style.display = 'block';
+
+        const agrupamento = {};
+        const labelSet = new Set();
+
+        filtradas.forEach(linha => {
+            const colunas = linha.split(',');
+            const data = colunas[0].trim(); // DATA DA VENDA
+            const valorStr = colunas[3]?.replace('R$', '').replace(',', '.').trim();
+            const valor = parseFloat(valorStr) * 0.3;
+            if (isNaN(valor)) return;
+
+            const [d, m, a] = data.split('/');
+
+            let chaveX = '';
+            let linhaID = '';
+
+            if (ano === 'todos') {
+                linhaID = a;
+                chaveX = `${m.padStart(2, '0')}`; // mês
+            } else if (ano !== 'todos' && mes === 'todos') {
+                linhaID = 'Total';
+                chaveX = `${m.padStart(2, '0')}`; // mês
+            } else if (ano !== 'todos' && mes !== 'todos') {
+                linhaID = 'Total';
+                chaveX = d.padStart(2, '0'); // dia
+            }
+
+            if (!agrupamento[linhaID]) agrupamento[linhaID] = {};
+            if (!agrupamento[linhaID][chaveX]) agrupamento[linhaID][chaveX] = 0;
+
+            agrupamento[linhaID][chaveX] += valor;
+            labelSet.add(chaveX);
+        });
+
+        const labels = [...labelSet].sort((a, b) => a - b);
+
+        const datasets = Object.entries(agrupamento).map(([linhaID, valores]) => {
+            return {
+                label: linhaID,
+                data: labels.map(l => valores[l] || 0),
+                fill: false,
+                tension: 0.2
+            };
+        });
+
+        trendChart = updateLineChart('trend-chart', trendChart, labels, datasets, 'Tendência de Vendas');
+    }
+
     renderizarTabela(headers, filtradas);
     gerarRanking(filtradas, 4, 'sellers-table', 'sellers-chart', 'sellersChart', 'Vendas por Vendedor');
     gerarRanking(filtradas, 2, 'products-table', 'products-chart', 'productsChart', 'Vendas por Produto');
     gerarRanking(filtradas, 1, 'bairros-table', 'bairros-chart', 'neighborhoodsChart', 'Vendas por Bairro');
-
+    atualizarGraficoDeTendencia(filtradas, ano, mes, dia);
 }
-
-// para futuras modificacoes
-// function filtrarPorDataAtual(headers, linhas, dataIndex) {
-//     const hoje = new Date();
-//     const dia = String(hoje.getDate()).padStart(2, '0');
-//     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-//     const ano = String(hoje.getFullYear());
-
-//     const filtradas = linhas.filter(linha => {
-//         const colunas = linha.split(',');
-//         const data = colunas[dataIndex]?.trim();
-//         const [d, m, a] = data.split('/');
-//         return d === dia && m === mes && a === ano;
-//     });
-
-//     renderizarTabela(headers, filtradas);
-// }
 
 function renderizarTabela(headers, linhas) {
     const cabecalho = document.getElementById('cabecalho');
